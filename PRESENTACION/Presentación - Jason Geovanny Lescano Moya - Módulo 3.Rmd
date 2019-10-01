@@ -1,0 +1,270 @@
+---
+title: "Presentación - Módulo 3"
+author: "Jason Lescano"
+date: "29/9/2019"
+output: powerpoint_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Introducción 
+
+* En el presente informe se examina el desempleo y empleo en el Ecuador, por sexo y por población jóven y adulta. 
+
+* Se toma como jóven a las personas hasta 29 años de edad, como lo señala la [Ley de la Juventud.](http://portal.uasb.edu.ec/UserFiles/369/File/PDF/CentrodeReferencia/Temasdeanalisis2/ninezadolescenciayjuventud/documentos/leyjuventudecuador.pdf)
+
+# Datos
+
+* Para este análisis se toma los datos de la [Encuesta Nacional de Empleo, Desempleo y Subempleo (ENEMDU)](https://www.ecuadorencifras.gob.ec/empleo-junio-2019/). 
+
+* La población objetivo se a determinado a las personas entre 15 y 65 años:
+  * Individuos en edad de trabajar (15 años o más)
+  * Individuos que aún se encuentran económicamente activa antes de obtener la jubilación voluntaria.
+
+
+#  Variables
+
+Para este estudio se han considerado las siguientes variables:
+
+- Edad
+- Sexo
+- Nivel de instrucción
+- Satisfacción laboral
+
+```{r Preambulo, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(DT)
+
+# Data
+data <- haven::read_sav("201906_EnemduBDD_15anios.sav")
+
+# Varibales objetivo
+data %>% 
+  select(sexo = p02, edad = p03, escolaridad = p10a, satisf = p59,
+         empleo, desempleo) %>% 
+  filter(edad >= 15 & edad < 99)-> base
+
+# Codificacion
+base %>% 
+  mutate(jovenes = case_when(edad<30 ~ "joven",
+                             edad>29 ~ "adulto",
+                             TRUE ~ "Otro"),
+         sexo = case_when(sexo==1 ~ "Hombre",
+                          sexo==2 ~ "Mujer",
+                          TRUE ~ "Otro"),
+         escolaridad = case_when(escolaridad==1 ~ "Ninguno",
+                                 escolaridad %in% c(2,3,4,5) ~ "Primaria", 
+                                 escolaridad %in% c(6,7) ~ "Secundaria",
+                                 escolaridad %in% c(8,9,10) ~ "Superior",
+                                 TRUE ~ "Otro"),
+         empleo = case_when(empleo==1 ~ "Empleado",
+                            TRUE ~ "No empleado"),
+         desempleo = case_when(desempleo==1 ~ "Desempleado",
+                               TRUE ~ "No desempleado"),
+         sat_lab = case_when(satisf==1 ~ "Muy contento",
+                             satisf==2 ~ "Contento",
+                             satisf==3 ~ "Descontento",
+                             satisf==4 ~ "Muy descontento",
+                             satisf==5 ~ "No responde",
+                             TRUE ~ "NO APLICA") ) -> base
+
+
+````
+
+
+# Edad
+
+```{r, echo=FALSE, message=FALSE}
+# Histograma Edad
+base %>% 
+ggplot( aes(x=edad) ) +
+  geom_histogram(fill = "blue") +
+  theme_minimal() +
+  theme( axis.title.y = element_blank())
+
+`````
+
+## Población joven
+
+# Global
+```{r, echo=FALSE, message=FALSE}
+# Porcentaje de Jovenes en el Ecuador
+base %>% 
+  group_by(jovenes) %>% 
+  summarise( Total = n()) %>% 
+  mutate(Porc =  Total/sum(Total)*100) %>% 
+  ggplot(aes(x=jovenes, y=Porc, fill=jovenes)) +
+  geom_col() +
+  theme_minimal() +
+  geom_text(aes( y = round(Porc),
+                 label =  paste(round(Porc), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5)
+````
+
+# Por sexo
+```{r, echo=FALSE, message=FALSE}
+## Por sexo 
+base %>% 
+  group_by(jovenes, sexo) %>% 
+  summarise( Total = n()) %>% 
+  mutate(Porc =  Total/sum(Total)*100) %>% 
+  ggplot(aes(x=sexo, y=Porc, fill=sexo)) +
+  geom_col() +
+  theme_minimal() +
+  facet_wrap(~jovenes) +
+  geom_text(aes( y = round(Porc),
+                 label =  paste(round(Porc), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5) 
+````
+
+
+
+## Empleo
+
+# Global
+```{r, echo=FALSE, message=FALSE}
+base %>% 
+  group_by(empleo) %>% 
+  summarise(Empleados = n()) %>% 
+  mutate(Porcentaje = Empleados/sum(Empleados)*100) %>% 
+  ggplot(aes(x=empleo, y=Porcentaje, fill=empleo)) +
+  geom_col() +
+  theme_minimal() +
+  geom_text(aes( y = round(Porcentaje),
+                 label =  paste(round(Porcentaje), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5) 
+```
+
+
+# Empleo Joven por sexo
+```{r, echo=FALSE, message=FALSE}
+base %>% 
+  group_by(jovenes, empleo) %>% 
+  summarise(Empleados = n()) %>% 
+  mutate(Porcentaje = Empleados/sum(Empleados)*100) %>% 
+  ggplot(aes(x=empleo, y=Porcentaje, fill=empleo)) +
+  geom_col() +
+  theme_minimal() +
+  facet_wrap(~jovenes) +
+  geom_text(aes( y = round(Porcentaje),
+                 label =  paste(round(Porcentaje), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5)
+```
+
+## Desempleo
+
+# Global
+```{r, echo=FALSE, message=FALSE}
+# Desempleo ----
+base %>% 
+  group_by(desempleo) %>% 
+  summarise(Desempleados = n()) %>% 
+  mutate(Porcentaje = Desempleados/sum(Desempleados)*100) %>% 
+  ggplot(aes(x=desempleo, y=Porcentaje, fill=desempleo)) +
+  geom_col() +
+  theme_minimal() +
+  geom_text(aes( y = round(Porcentaje),
+                 label =  paste(round(Porcentaje), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5) 
+```
+
+# Desempleo Joven por sexo
+```{r, echo=FALSE, message=FALSE}
+# Desmepleo por sexo
+base %>% 
+  filter(desempleo=="Desempleado") %>% 
+  group_by(jovenes, sexo) %>% 
+  summarise(Desempleados = n()) %>% 
+  mutate(Porcentaje = Desempleados/sum(Desempleados)*100) %>% 
+  ggplot(aes(x=sexo, y=Porcentaje, fill=sexo)) +
+  geom_col() +
+  theme_minimal() +
+  facet_wrap(~jovenes) +
+  geom_text(aes( y = round(Porcentaje),
+                 label =  paste(round(Porcentaje), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5) 
+```
+
+
+## Nivel de instrucción
+
+# Instrucción en la población joven
+
+```{r, echo=FALSE, message=FALSE}
+# Nivel de instrucción 
+base %>% 
+  group_by(jovenes, escolaridad) %>% 
+  summarise(Total = n()) %>% 
+  ungroup() %>% 
+  group_by(jovenes) %>% 
+  mutate(Porcentaje = Total/sum(Total)*100) %>% 
+  ggplot(aes(x=escolaridad, y=Porcentaje, fill=escolaridad)) +
+  geom_col() +
+  facet_wrap(~jovenes) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank() ) +
+  geom_text(aes( y = round(Porcentaje),
+                 label =  paste(round(Porcentaje), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5) 
+```
+
+## Satisfacción laboral
+
+# Global 
+# Satisfacción laboral
+```{r, echo=FALSE, message=FALSE}
+base %>% 
+  filter(satisf>0) %>% 
+  group_by(sat_lab) %>% 
+  summarise(Total = n()) %>% 
+  mutate(Porcentaje = round(Total/sum(Total)*100,1)) %>% 
+  ggplot(aes(x=sat_lab, y=Porcentaje, fill=sat_lab)) +
+  geom_col() +
+  theme_minimal() +
+  theme(axis.text.x = element_blank() ) +
+  geom_text(aes( y = round(Porcentaje, 1),
+                 label =  paste(round(Porcentaje, 1), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5) 
+```
+
+# Satisfacción laboral en la población joven
+```{r, echo=FALSE, message=FALSE}
+# Satisfacción laboral - jovenes
+base %>% 
+  filter(satisf>0) %>% 
+  group_by(jovenes, sat_lab) %>% 
+  summarise(Total = n()) %>% 
+  ungroup() %>% 
+  group_by(jovenes) %>% 
+  mutate(Porcentaje = round(Total/sum(Total)*100,1)) %>% 
+  ggplot(aes(x=sat_lab, y=Porcentaje, fill=sat_lab)) +
+  geom_col() +
+  facet_wrap(~jovenes) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank() ) +
+  geom_text(aes( y = round(Porcentaje, 1),
+                 label =  paste(round(Porcentaje, 1), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5) 
+```
+
