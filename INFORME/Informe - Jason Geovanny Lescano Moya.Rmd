@@ -1,0 +1,272 @@
+---
+title: "Exploración de datos - ENEMDU"
+author: "Jason Lescano"
+output:
+  word_document: default
+---
+
+# Introducción
+
+En el presente informe se examina el desempleo y empleo en el Ecuador, por sexo y por población jóven y adulta. Se toma como jóven a las personas hasta 29 años de edad, como lo señala la [Ley de la Juventud](http://portal.uasb.edu.ec/UserFiles/369/File/PDF/CentrodeReferencia/Temasdeanalisis2/ninezadolescenciayjuventud/documentos/leyjuventudecuador.pdf)
+
+Para este análisis se toma los datos de la [Encuesta Nacional de Empleo, Desempleo y Subempleo (ENEMDU)](https://www.ecuadorencifras.gob.ec/empleo-junio-2019/). La población objetivo se a determinado a las personas entre 15 y 65 años, la cual comprende a los ecuatorianos en edad de trabajar (15 años o más) y a las personas que aún se encuentran económicamente activa antes de obtener la jubilación voluntaria.
+
+# Análisis exploratorio
+
+```{r Preambulo, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(DT)
+
+# Data
+data <- haven::read_sav("201906_EnemduBDD_15anios.sav")
+
+# Varibales objetivo
+data %>% 
+  select(sexo = p02, edad = p03, escolaridad = p10a, satisf = p59,
+         empleo, desempleo) %>% 
+  filter(edad >= 15 & edad < 99)-> base
+
+# Codificacion
+base %>% 
+  mutate(jovenes = case_when(edad<30 ~ "joven",
+                             edad>29 ~ "adulto",
+                             TRUE ~ "Otro"),
+         sexo = case_when(sexo==1 ~ "Hombre",
+                          sexo==2 ~ "Mujer",
+                          TRUE ~ "Otro"),
+         escolaridad = case_when(escolaridad==1 ~ "Ninguno",
+                                 escolaridad %in% c(2,3,4,5) ~ "Primaria", 
+                                 escolaridad %in% c(6,7) ~ "Secundaria",
+                                 escolaridad %in% c(8,9,10) ~ "Superior",
+                                 TRUE ~ "Otro"),
+         empleo = case_when(empleo==1 ~ "Empleado",
+                            TRUE ~ "No empleado"),
+         desempleo = case_when(desempleo==1 ~ "Desempleado",
+                               TRUE ~ "No desempleado"),
+         sat_lab = case_when(satisf==1 ~ "Muy contento",
+                             satisf==2 ~ "Contento",
+                             satisf==3 ~ "Descontento",
+                             satisf==4 ~ "Muy descontento",
+                             satisf==5 ~ "No responde",
+                             TRUE ~ "NO APLICA") ) -> base
+
+
+````
+
+Podemos apreciar en el gráfico que la densidad poblacional por edad se encuetra mayormente concentrada en los individuos más jóvenes, y desiende con una tendencia visiblemente decreciente.
+
+
+```{r, echo=FALSE, message=FALSE}
+# Histograma Edad
+base %>% 
+ggplot( aes(x=edad) ) +
+  geom_histogram(fill = "blue") +
+  theme_minimal() +
+  theme( axis.title.y = element_blank())
+
+`````
+
+
+## Población jóven
+
+Podemos observar que apenas el 33% de la población es jóven, de los cuales el 53% es mujer. Por su parte, de la población mayor a 29 años, el 51% es hombre.
+
+```{r, echo=FALSE, message=FALSE}
+# Porcentaje de Jovenes en el Ecuador
+base %>% 
+  group_by(jovenes) %>% 
+  summarise( Total = n()) %>% 
+  mutate(Porc =  Total/sum(Total)*100) %>% 
+  ggplot(aes(x=jovenes, y=Porc, fill=jovenes)) +
+  geom_col() +
+  theme_minimal() +
+  geom_text(aes( y = round(Porc),
+                 label =  paste(round(Porc), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5)
+
+## Por sexo 
+base %>% 
+  group_by(jovenes, sexo) %>% 
+  summarise( Total = n()) %>% 
+  mutate(Porc =  Total/sum(Total)*100) %>% 
+  ggplot(aes(x=sexo, y=Porc, fill=sexo)) +
+  geom_col() +
+  theme_minimal() +
+  facet_wrap(~jovenes) +
+  geom_text(aes( y = round(Porc),
+                 label =  paste(round(Porc), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5) 
+````
+
+
+# Empleo y desempleo
+
+En rondas anteriores la ENMEDU extendía variables como el empleo, desempleo y subempleo, las cuales permitian permitian realizar un análisis bastante robusto y permitia contrastar estos tres tópicos. Sin embargo, para junio de 2019 no está disponible el subempleo.
+
+## Empleo
+A penas el 64% de los ecuatorianos se encientran empleados, de los cuales tan solo el 25,5%, aproximadamente, corresponde a empleados con 29 años o menos.
+
+Segmentando a la población en general, podemos obervar que respecto a la población mayor a 29 años, el 72% se encuentran empleados. Por otro lado, se observa que para los jóvenes tan solo el 49% ese encuentra empleado
+
+```{r, echo=FALSE, message=FALSE}
+# Empleo ---
+base %>% 
+  group_by(empleo) %>% 
+  summarise(Empleados = n()) %>% 
+  mutate(Porcentaje = Empleados/sum(Empleados)*100) %>% 
+  ggplot(aes(x=empleo, y=Porcentaje, fill=empleo)) +
+  geom_col() +
+  theme_minimal() +
+  geom_text(aes( y = round(Porcentaje),
+                 label =  paste(round(Porcentaje), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5) 
+
+# Empleo joven
+base %>% 
+  filter(empleo=="Empleado") %>% 
+  group_by(jovenes) %>% 
+  summarise(Empleados = n()) %>% 
+  mutate(Porcentaje = round(Empleados/sum(Empleados)*100, 1))
+
+# Empleo Joven por sexo ---
+base %>% 
+  group_by(jovenes, empleo) %>% 
+  summarise(Empleados = n()) %>% 
+  mutate(Porcentaje = Empleados/sum(Empleados)*100) %>% 
+  ggplot(aes(x=empleo, y=Porcentaje, fill=empleo)) +
+  geom_col() +
+  theme_minimal() +
+  facet_wrap(~jovenes) +
+  geom_text(aes( y = round(Porcentaje),
+                 label =  paste(round(Porcentaje), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5)
+```
+
+
+## Desempleo
+
+Respecto al desempleo, acorde a los datos contenidos en la ENEMDU, se tiene que el 3% de los ecuatorianos en edad de trabajar se enceuntra desempleado. De este porcentaje de desempleados, el 56,7% corresponde a personas jóvenes. 
+
+El desempleo por sexo dentro de los desempleados jóvenes y mayores a 29 años son semejantes, ya que el 54% de desemplados mayores a 29 años corresponde a mujeres, mientras que el 53% dentro de los jóvenes, aproximadamente. 
+
+```{r, echo=FALSE, message=FALSE}
+# Desempleo ----
+base %>% 
+  group_by(desempleo) %>% 
+  summarise(Desempleados = n()) %>% 
+  mutate(Porcentaje = Desempleados/sum(Desempleados)*100) %>% 
+  ggplot(aes(x=desempleo, y=Porcentaje, fill=desempleo)) +
+  geom_col() +
+  theme_minimal() +
+  geom_text(aes( y = round(Porcentaje),
+                 label =  paste(round(Porcentaje), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5) 
+
+
+# Desempleo Joven ---
+base %>% 
+  filter(desempleo=="Desempleado") %>% 
+  group_by(jovenes) %>% 
+  summarise(Desempleados = n()) %>% 
+  mutate(Porcentaje = Desempleados/sum(Desempleados)*100)
+
+
+# Desmepleo por sexo
+base %>% 
+  filter(desempleo=="Desempleado") %>% 
+  group_by(jovenes, sexo) %>% 
+  summarise(Desempleados = n()) %>% 
+  mutate(Porcentaje = Desempleados/sum(Desempleados)*100) %>% 
+  ggplot(aes(x=sexo, y=Porcentaje, fill=sexo)) +
+  geom_col() +
+  theme_minimal() +
+  facet_wrap(~jovenes) +
+  geom_text(aes( y = round(Porcentaje),
+                 label =  paste(round(Porcentaje), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5) 
+```
+
+
+# Nivel de instrucción
+En el siguiente gráfico podemos observar como se distribuyen los individuos dentro de los diferentes niveles de instrucción. Dentro de instrucción superior se ha considerado a las personas con educación superior no universitaria, con educación superior universitaria y con post-grado.
+
+Segmentando a los individuos por personas jóvenes (con 29 años o menos) y personas adulatas (mayores a 29 años), se observa que dentro de las personas adultas se concentran mayormente dentro de educación primaria con alrededor de 43%, seguida de secundaria (31%), superior (19%), y ningúno (7%). Por otra parte, para los jóvenes, se observa que los individuos se concentran dentro de educación secundaria con alrededor de 56%, seguida de educación primaria (22%) y
+superior (22%), y ningúno (1%).
+
+```{r, echo=FALSE, message=FALSE}
+# Nivel de instrucción 
+base %>% 
+  group_by(jovenes, escolaridad) %>% 
+  summarise(Total = n()) %>% 
+  ungroup() %>% 
+  group_by(jovenes) %>% 
+  mutate(Porcentaje = Total/sum(Total)*100) %>% 
+  ggplot(aes(x=escolaridad, y=Porcentaje, fill=escolaridad)) +
+  geom_col() +
+  facet_wrap(~jovenes) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank() ) +
+  geom_text(aes( y = round(Porcentaje),
+                 label =  paste(round(Porcentaje), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5) 
+```
+
+
+# Satisfaccion laboral
+
+La Satisfacción laboral hace referencia a como el trabajador bajo relación de dependencia se siente en su trabajo, reflejando en su percepción aspectos como salario, beneficios laborales por ley, entorno laboral, relaciones laborales, entre otras.
+
+Acorde a los datos contenidos dentro de la ENEMDU, a proximadamente el 76% se reporta como *muy contento* en su trabajo. Segmentando a los individuos por jóvenes y adultos, se observa una distribución dentro de las categorías de satisfacción laboral muy similares. Para los jóvenes, el 76% aproximadamente reporta sentirse muy contento en el trabajo. Por otro lado, para los individuos mayores a 29 años, aproximadamente el 76,5% se reporta como muy contentos en su trabajo.
+
+
+```{r, echo=FALSE, message=FALSE}
+# Satisfacción laboral
+base %>% 
+  filter(satisf>0) %>% 
+  group_by(sat_lab) %>% 
+  summarise(Total = n()) %>% 
+  mutate(Porcentaje = round(Total/sum(Total)*100,1)) %>% 
+  ggplot(aes(x=sat_lab, y=Porcentaje, fill=sat_lab)) +
+  geom_col() +
+  theme_minimal() +
+  theme(axis.text.x = element_blank() ) +
+  geom_text(aes( y = round(Porcentaje, 1),
+                 label =  paste(round(Porcentaje, 1), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5) 
+
+# Satisfacción laboral - jovenes
+base %>% 
+  filter(satisf>0) %>% 
+  group_by(jovenes, sat_lab) %>% 
+  summarise(Total = n()) %>% 
+  ungroup() %>% 
+  group_by(jovenes) %>% 
+  mutate(Porcentaje = round(Total/sum(Total)*100,1)) %>% 
+  ggplot(aes(x=sat_lab, y=Porcentaje, fill=sat_lab)) +
+  geom_col() +
+  facet_wrap(~jovenes) +
+  theme_minimal() +
+  theme(axis.text.x = element_blank() ) +
+  geom_text(aes( y = round(Porcentaje, 1),
+                 label =  paste(round(Porcentaje, 1), "%", sep = "")),
+            position = position_dodge(width = 0.9),
+            size = 3.5,
+            vjust = -0.5) 
+```
