@@ -1,0 +1,39 @@
+---
+title: "Presentación"
+author: "Daniela Sanchez"
+date: "2/10/2019"
+output: 
+       ioslides_presentation: default
+       beamer_presentation: default
+       powerpoint_presentation: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+##ESTADÍSTICAS DE FEMICIDIOS
+
+Las fuentes primarias para el desarrollo de este ejercicio son: Ministerio de Gobierno y SIAF.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library("rio")
+fem <- import("Femicidios-ago.csv")
+```
+
+## Tabla de Contenido
+
+- Resumen del numero de femicidios por año
+- Análisis gráfico de horario de ocurrencia de los femciidios
+
+##Resumen del numero de femicidios por año
+```{r , echo=FALSE, warning=FALSE, message=FALSE}
+
+library(ggplot2)
+ggplot(fem, aes(anio, victima)) + geom_bar(stat="identity",fill="blue",color="blue")+
+  labs(y="victimas", 
+       x="Año", 
+       title="Gráfico de victimas de femicidio por año")+
+  scale_x_continuous(breaks = c(2.014,2.015,2.016,2.017,2.018,2.019), label = c("2014","2015","2016","2017","2018","2019"))
+
+```
