@@ -1,0 +1,67 @@
+---
+title: "Deber"
+author: "Daniela Sánchez"
+date: "1/10/2019"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+#ESTADÍSTICAS DE FEMICIDIOS
+
+Las fuentes primarias para el desarrollo de este ejercicio son:
+
+1.	Operación Estadística “Estadística de Homicidios” del Ministerio de Gobierno 
+2.	Operación Estadística "Sistema Integrado de Atención de Fiscalías (SIAF Noticias de Delitos)" de la Fiscalía General del Estado .
+Producto de la integración y verificación cruzada de la información proveniente de estas dos operaciones, la base de datos final y el indicador de femicidios tiene como fuente a la Subcomisión Técnica de Validación de la Comisión Especial Interinstitucional de Seguridad Ciudadana y Justicia. 
+
+A continuación, se presenta un analisis descriptivo de los femicidios ocurridos en el Ecuador:
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+setwd("D:/Documentos/Desktop/Curso R")
+library("rio")
+fem <- import("Femicidios-ago.csv")
+library(DT)
+a <- data.frame(table(fem$anio,fem$provincia))
+datatable(a)
+```
+Ademas, es importante tomar en cuenta que el promedio de edad de las victimas de femicidio oscila entre los 20 y 35 años de edad. 
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(dplyr)
+b <- group_by(fem, provincia)%>%
+  summarise(Promfem=mean(edad_vic, na.rm = TRUE))
+datatable(b)
+```
+
+Por otro lado el promedio de edad de la victima se corresponde con su estado civil. 
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(dplyr)
+c <- group_by(fem, estadocivil_vic)%>%
+  summarise(Promfem=mean(edad_vic, na.rm = TRUE))
+datatable(c)
+```
+## Analisis Gráfico
+Al analizar el numero de victimas por año, se puede observar que en 2017 fue cuando se presentaron mayores victimas de femicidio
+```{r , echo=FALSE, warning=FALSE, message=FALSE}
+
+library(ggplot2)
+ggplot(fem, aes(anio, victima)) + geom_bar(stat="identity",fill="blue",color="blue")+
+  labs(y="victimas", 
+       x="Año", 
+       title="Gráfico de victimas de femicidio por año")+
+  scale_x_continuous(breaks = c(2.014,2.015,2.016,2.017,2.018,2.019), label = c("2014","2015","2016","2017","2018","2019"))
+```
+
+
+Por otro lado, analizando las horas de ocurrencia de estos casos se puede observar que tiene mayor incidencia en la madrugada de 0 a 5 horas.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library("highcharter")
+hchart(fem$hora_infraccion, type = "column", name = "hora")
+```
