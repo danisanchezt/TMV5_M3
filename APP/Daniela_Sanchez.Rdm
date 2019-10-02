@@ -1,0 +1,123 @@
+---
+output: html_document
+runtime: shiny
+---
+library(shiny)
+library(DT)
+library("rio")
+library("highcharter")
+
+#Autor: Daniela Sánchez
+#Fecha:02/10/2019
+
+
+# Define UI for application that draws a histogram
+ui <- fluidPage(
+
+    # Application title
+    titlePanel("femicidios"),
+
+    # Sidebar with a slider input for number of bins 
+    fluidRow(
+        column(2,
+               
+               
+               #sidebarLayout(
+               #sidebarPanel(
+               conditionalPanel(condition = 'input.conditionPanels=="Texto"',
+                                textInput(inputId = "texto",label = "Ingrese un texto"),
+                                actionButton("boton","Ejecutar")
+                                
+               ),
+               conditionalPanel(condition = 'input.conditionPanels=="Tabla"',
+                                downloadLink("downloadData", "Descargar datos")
+                                #selectInput(inputId = "df",label = "Presione data frame",choices = c("mtcars","iris"),selected = "mtcars")
+               )
+        ),
+        
+        column(1,
+               sliderInput("bins",
+                           "Num. Barras del Histograma:",
+                           min = 1,
+                           max = 50,
+                           value = 30)
+        ),
+        
+        
+        # Show a plot of the generated distribution
+        tabsetPanel(
+            tabPanel("Tabla",
+                     div(DTOutput("tabla"),style="font-size:80%"), 
+                     br(),
+                     div(DTOutput("tabla1"),style="font-size:80%")
+            ),
+            
+            
+            
+            tabPanel("Documento", 
+                     htmlOutput('documento')
+            ),
+            
+            
+            tabPanel("Graficos",
+                     plotOutput("distPlot"),
+                     highchartOutput("barras")
+                     
+                     
+            ), id="conditionPanels"
+        )
+    ),
+    
+    column(2,
+           img(src="licor.jpg",height=245, width=285),
+           h5("Libador", aling="center"),
+           br()
+           
+    )
+)
+
+
+# Define server logic required to draw a histogram
+server <- function(input, output) {
+    
+    #base
+    setwd("D:/Documentos/Desktop/Curso R")
+    library("rio")
+    fem <- import("Mi_base.dta")
+    #variables
+    output$tabla <- renderDT({
+        Data <- select(fem,c(anio, provincia,hora_infracion, edad_vic))
+        print(Data)
+    },
+    options=list(lengthChange=TRUE,
+                 scrollY=360,
+                 scrolly=TRUE)
+    )
+    #tabla filtrada por tipo de claves
+    output$tabla1 <- renderDT({
+        table(fem$edad_vic,fem$estadocivil_vic)
+    })
+    #descargas
+    output$downloadData <- downloadHandler(
+        filename = function() {
+            paste("data_", Sys.Date(), ".csv", sep="")
+        },
+        content = function(filename){
+            write.csv(fem, filename)
+        }
+    )
+    
+    #histograma
+    output$distPlot <- renderPlot({
+        # generate bins based on input$bins from ui.R
+        x    <- faithful[, 2]
+        bins <- seq(min(x), max(x), length.out = input$bins + 1)
+        
+        # draw the histogram with the specified number of bins
+        hist(x, breaks = bins, col = 'darkgray', border = 'blue')
+    })   
+    
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
