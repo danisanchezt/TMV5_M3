@@ -1,0 +1,67 @@
+---
+title: "Informe estadístico sobre nacidos vivos en Ecuador durante el año 2014"
+author: "Cristopher Aguirre"
+date: "October 1, 2019"
+output: slidy_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+## RESUMEN
+
+El presente informe presenta un análisis descriptivo del registro oficial presentado por el Instituto Nacional de Estadística y Censos (INEC) de los nacimientos durante el año 2014. Donde se muestra las características físicas y demográficas tanto de las madres como de los recién nacidos durante el periodo de tiempo mencionado, lo que permite tener resultados que ayuden a la ejecución de política pública, para garantizar la salud de la madre durante el embarazo, que ayudará tener una menor tasa de defunciones fetales.
+
+## INTRODUCCIÓN
+
+El presente informe hace referencia a la información sobre los nacimientos en el Ecuador en el año 2014, en donde se va a presentar variables cuantitativas y cualitativas que hacen referencia a características físicas y demográficas de los nacidos vivos y sus madres.
+
+La problemática para analizar es la baja tasa de natalidad del año 2014 en relación con el año anterior, con el interés de conocer que características producen que esta haya disminuido y que grupos sociales son los más vulnerables, además de profundizar con temas de realidad nacional y aportar con estadísticas actuales sobre este problema.
+
+La información utilizada es la proporcionada por el INEC a través de su registro anual de nacimientos en todo el Ecuador continental.
+```{r include=F}
+data <- read.csv("nacimientos.csv",header = T,sep = ",", dec = ".")
+attach(data)
+str(data)
+```
+## ANÁLISIS DESCRIPTIVO
+
+#### Total de nacimientos durante el año 2014
+
+El total de nacimientos durante el año 2014 en todo el Ecuador continental fue de 2 484, siendo Guayas la provincia que mayor cantidad de nacimiento tuvo con 851 que representan el 34% de los nacidos vivos en este periodo de tiempo. Además, se puede observar que del total de los nacimientos 1 257 son hombre y 1 227 son mujeres.
+```{r echo=F}
+tabla1 <- table(prov_nac, sexo)
+knitr::kable(tabla1, caption = "Nacidos vivos por provincia" , align = c("r","r"))
+```
+
+Haciendo una lista de los meses de nacimiento, se nota que en el mes de mayo, junio y julio hay un importante número de nacimientos, por lo cual se debería tener una mayor atención en controles prenatales en los meses previos además de tener un plan adecuado de distribución de profesionales de la saludan que puedan atender las necesidades de las mujeres embarazadas.
+
+```{r echo=F}
+tabla2 <- table(mes_nac,sexo)
+knitr::kable(tabla2, caption = "Nacidos vivos por `mes de nacimiento`" , align = c("r","r"))
+barplot(table(sexo,mes_nac),main="Frecuencia de nacimientos por mes",ylab = "Frecuencia absoluta"
+        ,legend = T, width = 0.5,cex.axis = 0.7, cex.names = 0.7,col = topo.colors(2))
+```
+
+## Características físicas del recién nacido
+
+####  Talla
+
+La talla promedio de los nacidos vivos se encuentra en 38,496 centímetros, pero existe un sesgo hacia la izquierda por parte de esta variable (Ver Gráfico), esto de debe a que las talla que se acercan más al valor máximo tienen una frecuencia mucho mayor debido a que son aquellas de los nacidos vivos que sus madres registraron haber estado por encima de las 35 semanas de gestación al momento del nacimiento de su hijo.
+
+En cuanto a la concentración de los datos existe una alta concentración de los datos, pero como ya se mencionó anteriormente la distribución de las tallas de los nacidos vivos no es simétrica (Ver Gráfico). Se comprueba esto a través del estadístico que nos arrojó el análisis exploratorio sobre el exceso de Curtosis que es de 3,943. Además, el valor de la desviación estándar es de 2,582 esto quiere decir que, en promedio, las tallas de los nacidos vivos se desvían del valor promedio en aproximadamente 2,58 centímetros, a causa de la semana de gestación de la madre y su edad.
+```{r echo=F}
+library(e1071)
+PASWR::EDA(talla)
+```
+##Tallas de recién nacidos por área de residencia
+
+Las tallas con mayor frecuencia como era de esperarse se encuentran en los nacidos vivos los cuales sus madres habitan en el área urbana del Ecuador, ya que tienen un mayor control prenatal durante su embarazo y las condiciones de vida son mucho mejor que en el área rural donde existen factores económicos que producen que los nacidos vivos tengan una talla mucho menor. Y es conveniente identificar en que provincias y parroquias en específico se necesita una mayor atención médica.
+
+```{r echo=F}
+tabla3 <- table(area_res,talla)
+barplot(table(area_res,talla),main="Frecuencia de tallas por Area de residencia",ylab = "Frecuencia absoluta",legend = T, width = 0.5,cex.axis = 0.7, cex.names = 0.7,col = topo.colors(2))
+```
+
