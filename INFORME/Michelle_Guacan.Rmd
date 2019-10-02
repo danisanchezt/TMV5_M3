@@ -1,0 +1,39 @@
+---
+title: "INFORME ESTADÍSTICO DE DEFUNCIONES DEFATES"
+author: "Michelle Guacan"
+date: "Octubre 1, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## INTRODUCCIÓN
+
+La información presentada en el presente informe corresponde al año 2017 proporcionada por el Instituto Nacional de Estadísticas y Censos (INEC), donde se va ha analizar las semanas de gestación el momento en que ocurrió la defunción fetal. Se presentan un total de 1 951 registros en todo el Ecuador de los cuales 1 061 fueron hombres, 839 fueron mujeres y 51 casos que se calificaron como indeterminados.
+
+```{r echo=F}
+library(readxl)
+fetales <- read_excel("fetales.xls")
+
+```
+```{r echo=F }
+attach(fetales)
+tabla<- table(lugar_ocur,sexo)
+knitr::kable(tabla, caption = "Defunciones por lugar de ocurrenica y sexo`" , align = c("r","r"))
+tabla2 <- table(sexo)
+tabla2 <- sort(tabla2)
+barplot(tabla2,main="Frecuencia de defunciones por sexo",ylab = "Frecuencia absoluta"
+        ,legend = T, width = 0.3,cex.axis = 0.6, cex.names = 0.8,col = rainbow(3))
+
+```
+
+## Semanas de gestación 
+
+Las semanas de gestación promedio de una mujer antes de que se produzca la defunción fetal para el año 2017 fue de 29 semanas aproximadamente, lo que nos indica que se debe tener un mayor cuidado prenatal antes de la semana 20 para que se prevenga cualquier problema que pueda afectar la salud del feto. En promedio este valor puede variar en 7 semanas aproximadamente, esto también permite tener una visión de que el riesgo de que una mujer pueda sufrir una defunción fetal se encuentra entre la mitad del embarazo y a pocas semanas del nacimiento., siendo así este el rango un punto donde las autoridades y profesionales de la salud deben tener especial énfasis.  Se puede observar que no posee ningún tipo de sesgo y está variables a simple vista tiene una distribución normal, y sin presentar datos atípicos. A pesar de esto cabe destacar que el valor de su exceso de Curtosis es de -1,127 lo que nos indica que existe una gran variabilidad de los datos sobre las semanas de gestación de la madre.
+```{r echo=F}
+library(e1071)
+PASWR::EDA(sem_gest)
+```
+
